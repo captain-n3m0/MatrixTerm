@@ -28,7 +28,7 @@ MatrixTerm is a command-line interface (CLI) client for Matrix, a decentralized 
    python matrixterm.py --homeserver MATRIX_HOMESERVER_URL --username YOUR_USERNAME --password YOUR_PASSWORD
 
    ```
-LICENSE: This project is licensed under the terms of the MIT license.[LICENSE]
+LICENSE: This project is licensed under the terms of the MIT license. [LICENSE]
 
 4. Contributing
    Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
