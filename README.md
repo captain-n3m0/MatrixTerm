@@ -2,7 +2,7 @@
 
 MatrixTerm is a command-line interface (CLI) client for Matrix, a decentralized communication protocol. This Python-based CLI client allows you to interact with Matrix chat rooms, join rooms, send messages, and more.
 
-![MatrixTerm Screenshot](screenshots/matrixterm_screenshot.png)
+![MatrixTerm Screenshot](.screenshots/matrixterm_screenshot.png)
 
 ## Features
 
@@ -16,7 +16,7 @@ MatrixTerm is a command-line interface (CLI) client for Matrix, a decentralized 
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/your-username/MatrixTerm.git
+   git clone https://github.com/captain-n3m0/MatrixTerm.git
    cd MatrixTerm
 
 2. Install the required dependencies:
