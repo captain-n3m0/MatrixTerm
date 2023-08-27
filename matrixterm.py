@@ -55,10 +55,28 @@ class MatrixCLI:
     async def close(self):
         await self.client.close()
 
+    async def leave_room(self, room_id):
+        await self.client.room_leave(room_id)
+        print(f"Left room {room_id}.")
+        if room_id in self.rooms:
+            del self.rooms[room_id]
+
+    async def direct_message(self, user_id, message):
+        room_id = await self.client.room_create(is_direct=True, invitees=[user_id])
+        await self.send_message(room_id, message)
+        print(f"Sent direct message to {user_id}.")
+
+    async def get_message_history(self, room_id, limit=10):
+        messages = await self.client.room_get_messages(room_id, limit=limit)
+        print(f"Message history for room {room_id}:")
+        for message in messages['chunk']:
+            sender = message['sender']
+            content = message['content']['body']
+            print(f"{sender}: {content}")
+
 async def main():
     parser = argparse.ArgumentParser(description="Matrix CLI Client")
 
-    # Customize the usage message to include the ASCII art
     usage = r"""
 ooo        ooooo               .             o8o                   ooooooooooooo
 `88.       .888'             .o8             `"'                   8'   888   `8
@@ -89,7 +107,10 @@ Welcome to MatrixTerm! Developed by captain-n3m0."""
         print("1. List rooms")
         print("2. Join room")
         print("3. Send message")
-        print("4. Exit")
+        print("4. Leave room")
+        print("5. Send direct message")
+        print("6. Get message history")
+        print("7. Exit")
         choice = input("Select an option: ")
 
         if choice == "1":
@@ -102,6 +123,16 @@ Welcome to MatrixTerm! Developed by captain-n3m0."""
             message = input("Enter message: ")
             await matrix_cli.send_message(room_id, message)
         elif choice == "4":
+            room_id = input("Enter room ID to leave: ")
+            await matrix_cli.leave_room(room_id)
+        elif choice == "5":
+            user_id = input("Enter user ID to send direct message: ")
+            message = input("Enter message: ")
+            await matrix_cli.direct_message(user_id, message)
+        elif choice == "6":
+            room_id = input("Enter room ID to get message history: ")
+            await matrix_cli.get_message_history(room_id)
+        elif choice == "7":
             await matrix_cli.close()
             break
         else:
