@@ -6,11 +6,14 @@ MatrixTerm is a command-line interface (CLI) client for Matrix, a decentralized 
 
 ## Features
 
-- List joined rooms
-- Join a Matrix room
-- Send messages to Matrix rooms
-- Clean and interactive command-line interface
-- Developed using the `matrix-nio` library
+- **List Joined Rooms:** View a list of rooms you have joined.
+- **Join a Matrix Room:** Easily join Matrix rooms using room IDs.
+- **Send Messages:** Send text messages to any room you are part of.
+- **Interactive CLI:** Enjoy a clean and interactive command-line interface for seamless navigation.
+- **Asynchronous Operation:** Built on `asyncio` for responsive and efficient performance.
+- **Configuration File Support:** Save your Matrix server and login credentials for quick access.
+- **Room Management:** Leave rooms and manage your room list effectively.
+- **Message History Retrieval:** Fetch and view message history within any room.
 
 ## Installation
 
