@@ -1,18 +1,23 @@
 import argparse
 import asyncio
 import sys
+import os
 from nio import AsyncClient, LoginResponse, RoomMessageText, RoomMessageMedia, RoomMemberEvent, RoomCreateEvent
+from aiofile import AIOFile
 
 class MatrixCLI:
-    def __init__(self, homeserver):
+    def __init__(self, homeserver, config_file=None):
         self.client = AsyncClient(homeserver)
         self.client.add_event_callback(self.handle_events, (RoomMessageText, RoomMessageMedia, RoomMemberEvent, RoomCreateEvent))
         self.rooms = {}
+        self.config_file = config_file
 
     async def login(self, username, password):
         response = await self.client.login(username=username, password=password)
         if isinstance(response, LoginResponse):
             print("Logged in successfully.")
+            if self.config_file:
+                await self.save_config(username, password)
         else:
             print("Login failed.")
             sys.exit(1)
@@ -32,20 +37,26 @@ class MatrixCLI:
             self.rooms[event.room_id] = event.content.get("room_name", "Unnamed Room")
 
     async def send_message(self, room_id, message):
-        await self.client.room_send(
-            room_id=room_id,
-            message_type="m.room.message",
-            content={
-                "msgtype": "m.text",
-                "body": message
-            }
-        )
-        print("Message sent.")
+        try:
+            await self.client.room_send(
+                room_id=room_id,
+                message_type="m.room.message",
+                content={
+                    "msgtype": "m.text",
+                    "body": message
+                }
+            )
+            print("Message sent.")
+        except Exception as e:
+            print(f"Failed to send message: {e}")
 
     async def join_room(self, room_id):
-        await self.client.join(room_id)
-        print(f"Joined room {room_id}.")
-        self.rooms[room_id] = "Unnamed Room"
+        try:
+            await self.client.join(room_id)
+            print(f"Joined room {room_id}.")
+            self.rooms[room_id] = "Unnamed Room"
+        except Exception as e:
+            print(f"Failed to join room: {e}")
 
     def list_rooms(self):
         print("Rooms:")
@@ -56,23 +67,50 @@ class MatrixCLI:
         await self.client.close()
 
     async def leave_room(self, room_id):
-        await self.client.room_leave(room_id)
-        print(f"Left room {room_id}.")
-        if room_id in self.rooms:
-            del self.rooms[room_id]
+        try:
+            await self.client.room_leave(room_id)
+            print(f"Left room {room_id}.")
+            if room_id in self.rooms:
+                del self.rooms[room_id]
+        except Exception as e:
+            print(f"Failed to leave room: {e}")
 
     async def direct_message(self, user_id, message):
-        room_id = await self.client.room_create(is_direct=True, invitees=[user_id])
-        await self.send_message(room_id, message)
-        print(f"Sent direct message to {user_id}.")
+        try:
+            room_id = await self.client.room_create(is_direct=True, invitees=[user_id])
+            await self.send_message(room_id, message)
+            print(f"Sent direct message to {user_id}.")
+        except Exception as e:
+            print(f"Failed to send direct message: {e}")
 
     async def get_message_history(self, room_id, limit=10):
-        messages = await self.client.room_get_messages(room_id, limit=limit)
-        print(f"Message history for room {room_id}:")
-        for message in messages['chunk']:
-            sender = message['sender']
-            content = message['content']['body']
-            print(f"{sender}: {content}")
+        try:
+            messages = await self.client.room_get_messages(room_id, limit=limit)
+            print(f"Message history for room {room_id}:")
+            for message in messages['chunk']:
+                sender = message['sender']
+                content = message['content']['body']
+                print(f"{sender}: {content}")
+        except Exception as e:
+            print(f"Failed to retrieve message history: {e}")
+
+    async def save_config(self, username, password):
+        config_data = f"[login]\nusername={username}\npassword={password}\n"
+        async with AIOFile(self.config_file, 'w') as afp:
+            await afp.write(config_data)
+
+    @staticmethod
+    def load_config(config_file):
+        if os.path.exists(config_file):
+            with open(config_file, 'r') as f:
+                lines = f.readlines()
+                config = {}
+                for line in lines:
+                    if '=' in line:
+                        key, value = line.strip().split('=')
+                        config[key] = value
+                return config.get('username'), config.get('password')
+        return None, None
 
 async def main():
     parser = argparse.ArgumentParser(description="Matrix CLI Client")
@@ -91,12 +129,21 @@ Welcome to MatrixTerm! Developed by captain-n3m0."""
     parser.usage = usage
 
     parser.add_argument("--homeserver", required=True, help="Matrix homeserver URL")
-    parser.add_argument("--username", required=True, help="Matrix username")
-    parser.add_argument("--password", required=True, help="Matrix password")
+    parser.add_argument("--username", help="Matrix username")
+    parser.add_argument("--password", help="Matrix password")
+    parser.add_argument("--config", help="Configuration file path", default="matrix_config.ini")
     args = parser.parse_args()
 
-    matrix_cli = MatrixCLI(args.homeserver)
-    await matrix_cli.login(args.username, args.password)
+    username, password = args.username, args.password
+    if not username or not password:
+        username, password = MatrixCLI.load_config(args.config)
+
+    if not username or not password:
+        print("Username and password are required.")
+        sys.exit(1)
+
+    matrix_cli = MatrixCLI(args.homeserver, config_file=args.config)
+    await matrix_cli.login(username, password)
 
     asyncio.create_task(matrix_cli.start())
 
